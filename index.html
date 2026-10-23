@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statslab</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="theme-color" content="#27854e">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox=%220 0 96 96%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Crect x=%224%22 y=%224%22 width=%2288%22 height=%2288%22 rx=%2222%22 fill=%22%2327854e%22/%3E%3Cpath d=%22M49.43 73.5Q46.62 73.5 43.57 73.11Q40.52 72.73 37.78 71.96Q35.05 71.19 32.87 70.13Q30.98 69.22 30.2 67.71Q29.43 66.2 29.64 64.52Q29.85 62.84 30.84 61.54Q31.82 60.24 33.43 59.79Q35.05 59.33 37.08 60.24Q39.75 61.5 43.11 62.21Q46.48 62.91 49.43 62.91Q54.06 62.91 55.92 61.68Q57.77 60.45 57.77 58.63Q57.77 57.01 56.48 56.03Q55.18 55.05 51.88 54.35L43.67 52.59Q36.94 51.19 33.64 47.68Q30.35 44.18 30.35 38.63Q30.35 34.99 31.85 32.01Q33.36 29.02 36.13 26.92Q38.9 24.81 42.73 23.66Q46.55 22.5 51.25 22.5Q54.9 22.5 58.65 23.31Q62.4 24.11 65.14 25.73Q66.75 26.57 67.46 28.04Q68.16 29.52 68.02 31.09Q67.88 32.67 66.93 33.86Q65.98 35.06 64.4 35.44Q62.83 35.83 60.65 34.92Q58.62 34 56.06 33.55Q53.5 33.09 51.11 33.09Q48.51 33.09 46.69 33.69Q44.87 34.29 43.92 35.41Q42.97 36.53 42.97 38Q42.97 39.48 44.2 40.49Q45.43 41.51 48.72 42.21L56.86 43.97Q63.67 45.44 67.03 48.81Q70.4 52.17 70.4 57.58Q70.4 61.22 68.93 64.17Q67.46 67.12 64.72 69.19Q61.98 71.26 58.13 72.38Q54.27 73.5 49.43 73.5Z%22 fill=%22%23e8f7ee%22 transform=%22translate%28-6 8%29%22/%3E%3Ccircle cx=%2270%22 cy=%2224%22 r=%226%22 fill=%22%23e8f7ee%22/%3E%3Ccircle cx=%2279%22 cy=%2238%22 r=%224%22 fill=%22%23e8f7ee%22/%3E%3Ccircle cx=%2276%22 cy=%2214%22 r=%223%22 fill=%22%23e8f7ee%22/%3E%3C/svg%3E">
+    <!-- Google Fonts: Outfit (lab branding) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js and SheetJS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'Segoe UI', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        // Lab branding, light green edition
+                        lab: {
+                            bg: '#f2faf4',
+                            brand: '#27854e',
+                            brandLight: '#7fd39b',
+                            brandDark: '#1b5f38',
+                            soft: '#e3f4e9',
+                            line: '#dcebe1',
+                            dark: '#121c16',
+                            darkCard: '#1b2a21',
+                            darkBorder: '#33493b'
+                        },
+                        // Green-tinted greys so text and borders match the palette
+                        gray: {
+                            50: '#f5faf6', 100: '#e9f5ec', 200: '#d9eadf', 300: '#bcd5c5',
+                            400: '#8aa996', 500: '#5a7a66', 600: '#46634f', 700: '#34503f',
+                            800: '#26402f', 900: '#182a20'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #bcd5c5;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #3f5a49;
+        }
+        .custom-scrollbar::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+        
+        /* Colored table rows */
+        tr.colored-row {
+            background-color: var(--row-bg);
+            border-left: 4px solid var(--row-border);
+            border-bottom: 1px solid var(--row-border-light);
+        }
+        tr.colored-row:hover {
+            background-color: var(--row-bg-hover);
+        }
+        
+        /* Lab background wash */
+        body { background-image: linear-gradient(135deg, #f1faf3 0%, #f7fbf3 50%, #eef8f2 100%); background-attachment: fixed; }
+        .dark body { background-image: linear-gradient(135deg, #182a20 0%, #121c16 60%, #131e17 100%); }
+        :focus-visible { outline: 3px solid #27854e; outline-offset: 2px; }
+        .dark :focus-visible { outline-color: #7fd39b; }
+
+        /* Tab transitions */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-lab-bg dark:bg-lab-dark text-gray-800 dark:text-gray-200 transition-colors duration-300 font-sans antialiased min-h-screen flex flex-col">
+
+    <header class="bg-white/70 dark:bg-lab-darkCard/70 backdrop-blur-xl border-b border-lab-line dark:border-lab-darkBorder sticky top-0 z-20 transition-colors duration-300">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg class="w-10 h-10 shrink-0" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="4" y="4" width="88" height="88" rx="22" fill="#27854e"/><path d="M49.43 73.5Q46.62 73.5 43.57 73.11Q40.52 72.73 37.78 71.96Q35.05 71.19 32.87 70.13Q30.98 69.22 30.2 67.71Q29.43 66.2 29.64 64.52Q29.85 62.84 30.84 61.54Q31.82 60.24 33.43 59.79Q35.05 59.33 37.08 60.24Q39.75 61.5 43.11 62.21Q46.48 62.91 49.43 62.91Q54.06 62.91 55.92 61.68Q57.77 60.45 57.77 58.63Q57.77 57.01 56.48 56.03Q55.18 55.05 51.88 54.35L43.67 52.59Q36.94 51.19 33.64 47.68Q30.35 44.18 30.35 38.63Q30.35 34.99 31.85 32.01Q33.36 29.02 36.13 26.92Q38.9 24.81 42.73 23.66Q46.55 22.5 51.25 22.5Q54.9 22.5 58.65 23.31Q62.4 24.11 65.14 25.73Q66.75 26.57 67.46 28.04Q68.16 29.52 68.02 31.09Q67.88 32.67 66.93 33.86Q65.98 35.06 64.4 35.44Q62.83 35.83 60.65 34.92Q58.62 34 56.06 33.55Q53.5 33.09 51.11 33.09Q48.51 33.09 46.69 33.69Q44.87 34.29 43.92 35.41Q42.97 36.53 42.97 38Q42.97 39.48 44.2 40.49Q45.43 41.51 48.72 42.21L56.86 43.97Q63.67 45.44 67.03 48.81Q70.4 52.17 70.4 57.58Q70.4 61.22 68.93 64.17Q67.46 67.12 64.72 69.19Q61.98 71.26 58.13 72.38Q54.27 73.5 49.43 73.5Z" fill="#e8f7ee" transform="translate(-6 8)"/><circle cx="70" cy="24" r="6" fill="#e8f7ee"/><circle cx="79" cy="38" r="4" fill="#e8f7ee"/><circle cx="76" cy="14" r="3" fill="#e8f7ee"/></svg>
+                <h1 class="text-[26px] font-bold tracking-tight leading-none"><span class="text-lab-brand dark:text-lab-brandLight">Stats</span><span class="text-[#5cc08a] dark:text-[#5fb383]">lab</span></h1>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button id="themeToggle" class="p-2.5 rounded-full bg-gray-100/80 dark:bg-gray-800/80 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle Dark Mode">
+                    <svg id="sunIcon" class="w-4 h-4 hidden dark:block text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg id="moonIcon" class="w-4 h-4 block dark:hidden text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 relative">
+        
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="absolute inset-0 z-[15] bg-gray-50/95 dark:bg-lab-dark/95 backdrop-blur-sm flex items-start pt-32 justify-center rounded-xl min-h-[600px] transition-opacity duration-300">
+            <div class="text-center" id="loadingContent">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-lab-brand border-t-transparent mb-4"></div>
+                <p class="text-gray-600 dark:text-gray-300 font-medium">Fetching and parsing Excel data...</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-start mb-8 mt-2 space-y-4">
+            <nav class="flex w-full gap-1 overflow-x-auto border-b border-lab-line dark:border-lab-darkBorder" aria-label="Tabs" id="tabsNav">
+                <button onclick="switchTab('year')" id="btn-year" class="tab-btn active px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-[3px] border-lab-brand dark:border-lab-brandLight text-gray-900 dark:text-white transition-colors">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        Year Group
+                    </div>
+                </button>
+                <button onclick="switchTab('form')" id="btn-form" class="tab-btn px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-[3px] border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        Form Group
+                    </div>
+                </button>
+                <button onclick="switchTab('details')" id="btn-details" class="tab-btn px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-[3px] border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Student Details
+                    </div>
+                </button>
+                <button onclick="switchTab('attendance')" id="btn-attendance" class="tab-btn px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-[3px] border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Attendance
+                    </div>
+                </button>
+            </nav>
+
+            <!-- Dynamic Filters -->
+            <div id="yearFilterWrapper" class="relative flex items-center bg-white dark:bg-lab-darkCard rounded-full px-5 py-2 border border-lab-line dark:border-lab-darkBorder transition-all">
+                <label for="yearFilter" class="text-xs font-bold tracking-wide text-gray-500 dark:text-gray-400 mr-3 uppercase">Filter Year</label>
+                <select id="yearFilter" class="appearance-none bg-transparent border-none text-lab-brand dark:text-lab-brandLight text-sm font-bold focus:ring-0 cursor-pointer outline-none pr-8">
+                    <option value="all">All Years</option>
+                </select>
+                <div class="pointer-events-none absolute right-4 flex items-center text-lab-brand dark:text-lab-brandLight">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+
+            <div id="formFilterWrapper" class="relative hidden items-center bg-white dark:bg-lab-darkCard rounded-full px-5 py-2 border border-lab-line dark:border-lab-darkBorder transition-all">
+                <label for="formFilter" class="text-xs font-bold tracking-wide text-gray-500 dark:text-gray-400 mr-3 uppercase">Filter Form</label>
+                <select id="formFilter" class="appearance-none bg-transparent border-none text-lab-brand dark:text-lab-brandLight text-sm font-bold focus:ring-0 cursor-pointer outline-none pr-8">
+                    <option value="all">All Forms</option>
+                </select>
+                <div class="pointer-events-none absolute right-4 flex items-center text-lab-brand dark:text-lab-brandLight">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-overview" class="tab-content active">
+            
+            <!-- Top Insights: Ratio and Concerns -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Ratio Card -->
+                <div class="md:col-span-1 bg-white dark:bg-lab-darkCard rounded-[14px] p-8 shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder flex flex-col justify-center items-center text-center transition-colors">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                        <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Ratio</h3>
+                    </div>
+                    
+                    <div class="flex items-center justify-center gap-4 mb-2 mt-2">
+                        <div class="flex flex-col items-center">
+                            <span class="text-6xl font-bold tracking-tight text-emerald-500" id="ratioRewardVal">-</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase mt-2 tracking-widest">Rewards</span>
+                        </div>
+                        <span class="text-3xl font-light text-gray-200 dark:text-gray-700 mb-6">:</span>
+                        <div class="flex flex-col items-center">
+                            <span class="text-6xl font-bold tracking-tight text-rose-500" id="ratioSanctionVal">-</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase mt-2 tracking-widest">Sanctions</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-6 px-4 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-full inline-block tracking-wide">Excludes Safe Space, Tablet & Toilet</p>
+                </div>
+
+                <!-- Students of Concern -->
+                <div class="md:col-span-2 bg-white dark:bg-lab-darkCard rounded-[14px] shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder flex flex-col transition-colors overflow-hidden h-[260px]">
+                    <div class="px-6 py-4 border-b border-gray-100/50 dark:border-lab-darkBorder/50 flex justify-between items-center sticky top-0 z-10 bg-white/70 dark:bg-lab-darkCard/70 backdrop-blur-md">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                            <h3 class="text-sm font-bold tracking-wide text-gray-800 dark:text-gray-200">Students of Concern</h3>
+                        </div>
+                        <span class="text-[10px] font-bold px-3 py-1 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 rounded-full uppercase tracking-widest">Top 5</span>
+                    </div>
+                    <div class="overflow-x-auto flex-grow overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="text-xs text-gray-500 dark:text-gray-400 bg-gray-50/20 dark:bg-gray-800/20 sticky top-0 backdrop-blur-sm">
+                                <tr>
+                                    <th class="px-5 py-2 font-medium">Student</th>
+                                    <th class="px-5 py-2 font-medium">Form Group</th>
+                                    <th class="px-5 py-2 font-medium text-right">Total Sanctions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="concernTableBody" class="divide-y divide-gray-100/50 dark:divide-lab-darkBorder/50 text-gray-700 dark:text-gray-300">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Overall Ratio (Doughnut) -->
+                <div class="bg-white dark:bg-lab-darkCard rounded-[14px] shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder p-6 flex flex-col transition-colors h-[380px]">
+                    <h2 class="text-sm font-bold tracking-wide mb-4 text-gray-800 dark:text-gray-200">Overall Ratio</h2>
+                    <div class="relative flex-grow w-full">
+                        <canvas id="ratioChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Daily Events Over Time (Stacked) -->
+                <div class="bg-white dark:bg-lab-darkCard rounded-[14px] shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder p-6 flex flex-col transition-colors h-[380px]">
+                    <h2 class="text-sm font-bold tracking-wide mb-4 text-gray-800 dark:text-gray-200">Daily Events</h2>
+                    <div class="relative flex-grow w-full">
+                        <canvas id="dailyEventsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 3: Top 10 Event Descriptions (Colored by Category) -->
+                <div class="bg-white dark:bg-lab-darkCard rounded-[14px] shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder p-6 flex flex-col transition-colors h-[380px]">
+                    <h2 class="text-sm font-bold tracking-wide mb-4 text-gray-800 dark:text-gray-200">Top 10 Descriptions</h2>
+                    <div class="relative flex-grow w-full">
+                        <canvas id="topEventsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 4: Events by Tutor Group (Stacked) -->
+                <div class="bg-white dark:bg-lab-darkCard rounded-[14px] shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder p-6 flex flex-col transition-colors h-[380px]">
+                    <h2 id="breakdownChartTitle" class="text-sm font-bold tracking-wide mb-4 text-gray-800 dark:text-gray-200">Year Group Breakdown</h2>
+                    <div class="relative flex-grow w-full">
+                        <canvas id="tutorGroupsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-details" class="tab-content">
+            <div class="bg-white dark:bg-lab-darkCard rounded-[14px] shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder flex flex-col transition-colors overflow-hidden h-[800px] max-h-[80vh]">
+                <div class="p-6 border-b border-gray-100/50 dark:border-lab-darkBorder/50 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/70 dark:bg-lab-darkCard/70 backdrop-blur-md">
+                    <div>
+                        <h2 class="text-sm font-bold tracking-wide text-gray-800 dark:text-gray-200">Detailed Student Logs</h2>
+                        <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-1" id="tableFilterDesc">Showing all records. Use the search to find specific comments, teachers or students.</p>
+                    </div>
+                    <div class="relative w-full sm:w-96">
+                        <input type="text" id="tableSearch" placeholder="Search..." 
+                            class="w-full pl-10 pr-4 py-2 bg-gray-100/80 dark:bg-gray-800/80 border-none rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-lab-brand dark:text-gray-200 transition-colors shadow-inner">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-4 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto flex-grow overflow-y-auto custom-scrollbar relative">
+                    <table class="w-full text-left text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                        <thead class="sticky top-0 bg-white/95 dark:bg-lab-darkCard/95 backdrop-blur-md text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-lab-darkBorder z-10 text-xs uppercase tracking-wider font-semibold">
+                            <tr>
+                                <th class="px-6 py-4">Date & Time</th>
+                                <th class="px-6 py-4">Student</th>
+                                <th class="px-5 py-3 font-medium">Year</th>
+                                <th class="px-5 py-3 font-medium">Form</th>
+                                <th class="px-5 py-3 font-medium">Type</th>
+                                <th class="px-5 py-3 font-medium">Description</th>
+                                <th class="px-5 py-3 font-medium">Logged By</th>
+                                <th class="px-5 py-3 font-medium w-full">Detailed Comments</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailsTableBody">
+                            <!-- Dynamic rows populated via JS -->
+                        </tbody>
+                    </table>
+                    <div id="noResults" class="hidden p-8 text-center text-gray-500 dark:text-gray-400 mt-10">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        No logs match your current search and filters.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-attendance" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[800px] max-h-[80vh]">
+                <!-- Punctuality / Lateness Chart -->
+                <div class="lg:col-span-1 bg-white dark:bg-lab-darkCard rounded-[14px] shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder p-6 flex flex-col transition-colors h-full">
+                    <h2 class="text-sm font-bold tracking-wide mb-4 text-gray-800 dark:text-gray-200">Lateness Over Time</h2>
+                    <div class="relative flex-grow w-full min-h-[250px]">
+                        <canvas id="latenessChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Lateness Log Table -->
+                <div class="lg:col-span-2 bg-white dark:bg-lab-darkCard rounded-[14px] shadow-[0_1px_3px_rgba(38,64,47,0.08)] border border-lab-line dark:border-lab-darkBorder flex flex-col transition-colors overflow-hidden h-full">
+                    <div class="p-6 border-b border-gray-100/50 dark:border-lab-darkBorder/50 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/70 dark:bg-lab-darkCard/70 backdrop-blur-md">
+                        <div>
+                            <h2 class="text-sm font-bold tracking-wide text-gray-800 dark:text-gray-200">Attendance & Punctuality Logs</h2>
+                            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-1">Showing all records marked as 'Lateness' or 'Absence'.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto flex-grow overflow-y-auto custom-scrollbar relative">
+                        <table class="w-full text-left text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            <thead class="sticky top-0 bg-white/95 dark:bg-lab-darkCard/95 backdrop-blur-md text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-lab-darkBorder z-10 text-xs uppercase tracking-wider font-semibold">
+                                <tr>
+                                    <th class="px-6 py-4">Date</th>
+                                    <th class="px-6 py-4">Student</th>
+                                    <th class="px-5 py-3 font-medium">Form</th>
+                                    <th class="px-5 py-3 font-medium">Record Type</th>
+                                    <th class="px-5 py-3 font-medium w-full">Comments</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <!-- Dynamic rows populated via JS -->
+                            </tbody>
+                        </table>
+                        <div id="noAttendanceResults" class="hidden p-8 text-center text-gray-500 dark:text-gray-400 mt-10">
+                            <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Excellent! No lateness or absence records found in the current timeframe.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Global State
+        let activeTab = 'year';
+        let charts = [];
+        let rawMasterData = []; // Immutable dataset
+        let currentFilteredData = []; // Data currently matching the form dropdown
+        let currentSearchTerm = "";
+        
+        // Dynamic Type Colors Mapping - Ensuring distinct colors for EVERYTHING
+        // Using a vibrant palette for rows to ensure strong contrast and clear categorization
+        const typeColors = {
+            'Reward': '#10b981',      // Emerald Green
+            'Challenge': '#ef4444',   // Red
+            'Safe Space': '#f97316',  // Orange
+            'Uniform': '#a855f7',     // Purple
+            'Equipment': '#06b6d4',   // Cyan
+            'Tablet SS': '#ec4899',   // Pink
+            'HL': '#3b82f6',          // Blue
+            'PC': '#14b8a6',          // Teal
+            'Break/Lun': '#eab308',   // Yellow
+            'Inclusion ': '#6366f1',  // Indigo
+            'Toilet': '#8b5cf6',      // Violet
+            'Offsite': '#84cc16',     // Lime
+            'ICT': '#64748b',         // Slate
+            'Suspension': '#f43f5e'   // Rose
+        };
+        const fallbackPalette = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#14b8a6', '#0ea5e9', '#6366f1', '#f43f5e', '#84cc16', '#06b6d4'];
+        let colorIdx = 0;
+
+        function getColorForType(type) {
+            const t = String(type).trim();
+            if (!typeColors[t]) {
+                typeColors[t] = fallbackPalette[colorIdx % fallbackPalette.length];
+                colorIdx++;
+            }
+            return typeColors[t];
+        }
+
+        // Theme Management
+        const html = document.documentElement;
+        // Follow the device theme on first load (the toggle still overrides it)
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) html.classList.add('dark');
+        const themeToggleBtn = document.getElementById('themeToggle');
+        
+        // Setup Chart defaults (lab styling)
+        Chart.defaults.font.family = "'Outfit', 'Segoe UI', 'Arial', sans-serif";
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(24, 42, 32, 0.95)';
+        Chart.defaults.plugins.tooltip.titleFont = { family: "'Outfit', 'Segoe UI', system-ui, sans-serif", size: 13, weight: 'bold' };
+        Chart.defaults.plugins.tooltip.bodyFont = { family: "'Outfit', 'Segoe UI', system-ui, sans-serif", size: 13 };
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.boxPadding = 4;
+
+        function updateChartColors() {
+            const isDark = html.classList.contains('dark');
+            const textColor = isDark ? '#8aa996' : '#5a7a66'; // Gray-400 / Gray-600
+            const gridColor = isDark ? '#33493b' : '#dcebe1'; // lab dark border / light line
+
+            Chart.defaults.color = textColor;
+            Chart.defaults.scale.grid.color = gridColor;
+
+            charts.forEach(chart => {
+                if (chart.options.scales.x) {
+                    chart.options.scales.x.ticks.color = textColor;
+                    chart.options.scales.x.grid.color = gridColor;
+                }
+                if (chart.options.scales.y) {
+                    chart.options.scales.y.ticks.color = textColor;
+                    chart.options.scales.y.grid.color = gridColor;
+                }
+                if (chart.options.plugins.legend) {
+                    chart.options.plugins.legend.labels.color = textColor;
+                }
+                chart.update();
+            });
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            updateChartColors();
+        });
+
+        // Utility: Escape HTML
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Reset all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-[3px] border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors";
+            });
+            
+            // Activate selected button
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) activeBtn.className = "tab-btn active px-4 py-2.5 text-sm font-bold whitespace-nowrap border-b-[3px] border-lab-brand dark:border-lab-brandLight text-gray-900 dark:text-white transition-colors";
+
+            // Manage visibility of filters and content
+            const yearWrapper = document.getElementById('yearFilterWrapper');
+            const formWrapper = document.getElementById('formFilterWrapper');
+            const breakdownTitle = document.getElementById('breakdownChartTitle');
+
+            if (tabId === 'year') {
+                document.getElementById('tab-overview').classList.add('active');
+                yearWrapper.classList.remove('hidden');
+                yearWrapper.classList.add('flex');
+                formWrapper.classList.add('hidden');
+                formWrapper.classList.remove('flex');
+                if (breakdownTitle) breakdownTitle.innerText = 'Year Group Breakdown';
+                applyFilters();
+            } else if (tabId === 'form') {
+                document.getElementById('tab-overview').classList.add('active');
+                yearWrapper.classList.add('hidden');
+                yearWrapper.classList.remove('flex');
+                formWrapper.classList.remove('hidden');
+                formWrapper.classList.add('flex');
+                if (breakdownTitle) breakdownTitle.innerText = 'Form Group Breakdown';
+                applyFilters();
+            } else if (tabId === 'details') {
+                document.getElementById('tab-details').classList.add('active');
+                yearWrapper.classList.add('hidden');
+                yearWrapper.classList.remove('flex');
+                formWrapper.classList.add('hidden');
+                formWrapper.classList.remove('flex');
+                // Ensure table is up to date based on search
+                executeTableSearch();
+            } else if (tabId === 'attendance') {
+                document.getElementById('tab-attendance').classList.add('active');
+                yearWrapper.classList.add('hidden');
+                yearWrapper.classList.remove('flex');
+                formWrapper.classList.add('hidden');
+                formWrapper.classList.remove('flex');
+                
+                // Render Attendance Data
+                renderAttendanceData();
+            }
+        }
+
+        async function initDataLoad() {
+            const fileUrl = 'EventRecords_2026-9-20 16_9_26.xlsx';
+            try {
+                const response = await fetch(fileUrl);
+                if (!response.ok) throw new Error('File not found');
+                const arrayBuffer = await response.arrayBuffer();
+                parseExcel(arrayBuffer);
+            } catch (error) {
+                console.warn("Could not auto-fetch file. Providing manual upload.");
+                document.getElementById('loadingContent').innerHTML = `
+                    <div class="text-center p-8 bg-white dark:bg-lab-darkCard rounded-xl shadow-xl border border-gray-200 dark:border-lab-darkBorder max-w-md w-full mx-auto relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-2 bg-lab-brand"></div>
+                        <svg class="w-12 h-12 text-lab-brand mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Data Load Restricted</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 px-4">Browser security prevented automatic background fetching of the Excel file. Please manually select <strong>${fileUrl}</strong> to proceed.</p>
+                        <label class="block w-full py-3 px-4 rounded-lg bg-lab-brand hover:bg-lab-brandDark text-white font-medium shadow-md transition-colors cursor-pointer">
+                            <span>Browse For File</span>
+                            <input type="file" id="manualUpload" accept=".xlsx, .xls" class="hidden" />
+                        </label>
+                    </div>
+                `;
+                
+                document.getElementById('manualUpload').addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        document.getElementById('loadingContent').innerHTML = `
+                            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-lab-brand border-t-transparent mb-4"></div>
+                            <p class="text-gray-600 dark:text-gray-300 font-medium">Crunching the numbers...</p>
+                        `;
+                        const reader = new FileReader();
+                        reader.onload = function(evt) { parseExcel(evt.target.result); };
+                        reader.readAsArrayBuffer(file);
+                    }
+                });
+            }
+        }
+
+        function parseExcel(dataBuffer) {
+            try {
+                const workbook = XLSX.read(dataBuffer, { type: 'array', cellDates: true });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                processInitialData(jsonData);
+            } catch (e) {
+                console.error(e);
+                const lc = document.getElementById('loadingContent');
+                lc.innerHTML = `<div class="p-4 rounded-lg bg-red-100 text-red-700 border border-red-200 font-medium">Failed to parse Excel data. Ensure it's a valid format.</div>`;
+            }
+        }
+
+        function processInitialData(data) {
+            rawMasterData = [];
+            const tutorGroups = new Set();
+            const yearGroups = new Set();
+
+            data.forEach(row => {
+                const fname = row['First Name'] || '';
+                const lname = row['Last Name'] || '';
+                const student = `${fname} ${lname}`.trim() || 'Unknown Student';
+                const tutor = row['Tutor Group'] || 'Unassigned';
+                const yearRaw = row['Year Group'];
+                const year = yearRaw !== undefined && yearRaw !== null ? String(yearRaw).trim() : 'Unknown';
+                const yearDisplay = isNaN(year) ? year : `Year ${year}`;
+                const rawType = String(row['Event Type'] || 'Unknown').trim();
+                const description = row['Event Description'] || 'No Description';
+                const loggedBy = row['Logged By'] || 'Unknown Teacher';
+                const comment = row['Behaviour Comment'] || '';
+                
+                tutorGroups.add(tutor);
+                if(yearDisplay !== 'Unknown') yearGroups.add(yearDisplay);
+
+                let dateObj = new Date(row['Event Date']);
+                if (isNaN(dateObj) && typeof row['Event Date'] === 'string') {
+                    dateObj = new Date(Date.parse(row['Event Date']));
+                }
+                
+                let dateDisplay = 'Unknown Date';
+                let dateSortKey = '1970-01-01';
+                if (!isNaN(dateObj)) {
+                    dateDisplay = dateObj.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    dateSortKey = dateObj.toISOString().split('T')[0];
+                }
+
+                rawMasterData.push({ dateDisplay, dateSortKey, dateObj, student, yearDisplay, tutor, rawType, description, loggedBy, comment });
+            });
+
+            // Sort newest first globally
+            rawMasterData.sort((a, b) => {
+                if (isNaN(a.dateObj) || isNaN(b.dateObj)) return 0;
+                return b.dateObj - a.dateObj;
+            });
+
+            // Populate the dropdowns
+            const yearSelect = document.getElementById('yearFilter');
+            yearSelect.innerHTML = '<option value="all">All Years</option>';
+            Array.from(yearGroups).sort().forEach(year => {
+                yearSelect.innerHTML += `<option value="${year}">${escapeHTML(year)}</option>`;
+            });
+
+            const formSelect = document.getElementById('formFilter');
+            formSelect.innerHTML = '<option value="all">All Forms</option>';
+            Array.from(tutorGroups).filter(t => t !== 'Unassigned').sort().forEach(group => {
+                formSelect.innerHTML += `<option value="${group}">${escapeHTML(group)}</option>`;
+            });
+
+            // Add Event Listeners to Dropdowns
+            yearSelect.addEventListener('change', applyFilters);
+            formSelect.addEventListener('change', applyFilters);
+
+            // Execute first pass
+            applyFilters();
+
+            // Fade out loading
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => overlay.style.display = 'none', 300);
+        }
+
+        function applyFilters() {
+            if (activeTab === 'details') return; // Don't run chart logic when purely switching to details tab
+
+            let filteredData = rawMasterData;
+            
+            if (activeTab === 'year') {
+                const yearVal = document.getElementById('yearFilter').value;
+                if (yearVal === 'all') {
+                    document.getElementById('tableFilterDesc').innerText = "Showing all records across the whole school.";
+                } else {
+                    filteredData = rawMasterData.filter(row => row.yearDisplay === yearVal);
+                    document.getElementById('tableFilterDesc').innerText = `Showing records for ${yearVal}.`;
+                }
+            } else if (activeTab === 'form') {
+                const formVal = document.getElementById('formFilter').value;
+                if (formVal === 'all') {
+                    document.getElementById('tableFilterDesc').innerText = "Showing all records across all Form Groups.";
+                } else {
+                    filteredData = rawMasterData.filter(row => row.tutor === formVal);
+                    document.getElementById('tableFilterDesc').innerText = `Showing records specifically for Form ${formVal}.`;
+                }
+            }
+
+            currentFilteredData = filteredData;
+
+            // 2. Build Aggregations for Charts based on currentFilteredData
+            const overallTypeStats = {};
+            const breakdownStats = {};
+            const dailyStats = {};
+            const descriptionStats = {};
+            const descriptionTypeMap = {};
+            const allTypesSet = new Set();
+            
+            const excludedTypes = ['Tablet SS', 'Safe Space', 'Toilet'];
+            const rewardTypes = ['Reward']; // All others considered Sanctions
+            let totalRewards = 0;
+            let totalSanctions = 0;
+            const studentSanctions = {};
+
+            currentFilteredData.forEach(row => {
+                const { rawType, yearDisplay, tutor, dateSortKey, description, student } = row;
+                const typeStr = rawType.trim();
+                
+                allTypesSet.add(rawType);
+
+                if (!overallTypeStats[rawType]) overallTypeStats[rawType] = 0;
+                overallTypeStats[rawType]++;
+
+                const breakdownKey = activeTab === 'year' ? yearDisplay : tutor;
+                if (!breakdownStats[breakdownKey]) breakdownStats[breakdownKey] = { total: 0 };
+                if (!breakdownStats[breakdownKey][rawType]) breakdownStats[breakdownKey][rawType] = 0;
+                breakdownStats[breakdownKey][rawType]++;
+                breakdownStats[breakdownKey].total++;
+
+                if (!dailyStats[dateSortKey]) dailyStats[dateSortKey] = { total: 0 };
+                if (!dailyStats[dateSortKey][rawType]) dailyStats[dateSortKey][rawType] = 0;
+                dailyStats[dateSortKey][rawType]++;
+                dailyStats[dateSortKey].total++;
+
+                if (!descriptionStats[description]) {
+                    descriptionStats[description] = 0;
+                    descriptionTypeMap[description] = rawType;
+                }
+                descriptionStats[description]++;
+                
+                // Ratio and Concern Logic
+                if (!excludedTypes.includes(typeStr)) {
+                    if (rewardTypes.includes(typeStr)) {
+                        totalRewards++;
+                    } else {
+                        totalSanctions++;
+                        if (!studentSanctions[student]) {
+                            studentSanctions[student] = { count: 0, tutor: tutor };
+                        }
+                        studentSanctions[student].count++;
+                    }
+                }
+            });
+
+            // Update Ratio UI
+            document.getElementById('ratioRewardVal').innerText = totalRewards;
+            document.getElementById('ratioSanctionVal').innerText = totalSanctions;
+            
+            // Update Students of Concern UI
+            const sortedConcerns = Object.entries(studentSanctions)
+                .map(([student, data]) => ({ student, count: data.count, tutor: data.tutor }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5); // Get top 5
+
+            const tbody = document.getElementById('concernTableBody');
+            if (sortedConcerns.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="px-5 py-6 text-center text-gray-500 italic">No concerns matching criteria.</td></tr>`;
+            } else {
+                tbody.innerHTML = sortedConcerns.map(s => `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-lab-dark transition-colors">
+                        <td class="px-5 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">${escapeHTML(s.student)}</td>
+                        <td class="px-5 py-3 text-xs text-gray-600 dark:text-gray-400">${escapeHTML(s.tutor)}</td>
+                        <td class="px-5 py-3 text-right">
+                            <span class="inline-flex items-center justify-center px-2.5 py-1 text-xs font-bold leading-none text-rose-100 bg-rose-600/90 rounded-md">${s.count}</span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render UI
+            renderCharts(breakdownStats, dailyStats, descriptionStats, descriptionTypeMap, overallTypeStats, Array.from(allTypesSet));
+            executeTableSearch(); // Render table respecting current search term
+        }
+
+        function destroyCharts() {
+            charts.forEach(chart => chart.destroy());
+            charts = [];
+        }
+
+        function renderCharts(breakdownStats, dailyStats, descriptionStats, descriptionTypeMap, overallTypeStats, allTypes) {
+            destroyCharts();
+
+            const allTypesSorted = allTypes.sort((a, b) => overallTypeStats[b] - overallTypeStats[a]);
+
+            // 1. Overall Ratio Doughnut
+            const ctx1 = document.getElementById('ratioChart').getContext('2d');
+            charts.push(new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: allTypesSorted,
+                    datasets: [{
+                        data: allTypesSorted.map(t => overallTypeStats[t]),
+                        backgroundColor: allTypesSorted.map(t => getColorForType(t)),
+                        borderWidth: 2,
+                        borderColor: html.classList.contains('dark') ? '#1b2a21' : '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: { cutout: '65%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: {family: "'Outfit', 'Segoe UI', system-ui, sans-serif"} } } } }
+            }));
+
+            // 2. Daily Trends Stacked Bar
+            const sortedDates = Object.keys(dailyStats).sort();
+            const dateLabels = sortedDates.map(d => {
+                const date = new Date(d);
+                return isNaN(date) ? d : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            });
+            
+            const dailyDatasets = allTypesSorted.map(type => ({
+                label: type, 
+                data: sortedDates.map(d => dailyStats[d][type] || 0), 
+                backgroundColor: getColorForType(type),
+                borderRadius: {topLeft: 2, topRight: 2}
+            })).filter(ds => ds.data.some(val => val > 0)); 
+
+            const ctx2 = document.getElementById('dailyEventsChart').getContext('2d');
+            charts.push(new Chart(ctx2, {
+                type: 'bar',
+                data: { labels: dateLabels, datasets: dailyDatasets },
+                options: {
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { mode: 'index', intersect: false } },
+                    scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, grid: { borderDash: [4, 4] } } }
+                }
+            }));
+
+            // 3. Top 10 Event Descriptions
+            const topDescriptions = Object.entries(descriptionStats)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            const descLabels = topDescriptions.map(d => d[0].length > 25 ? d[0].substring(0, 25) + '...' : d[0]);
+            const descData = topDescriptions.map(d => d[1]);
+            const descColors = topDescriptions.map(d => getColorForType(descriptionTypeMap[d[0]]));
+
+            const ctx3 = document.getElementById('topEventsChart').getContext('2d');
+            charts.push(new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: descLabels,
+                    datasets: [{
+                        data: descData,
+                        backgroundColor: descColors,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, grid: { borderDash: [4, 4] } }, y: { grid: { display: false } } }
+                }
+            }));
+
+            // 4. Breakdown Stacked Bar (Top 15)
+            const topBreakdown = Object.entries(breakdownStats).sort((a, b) => b[1].total - a[1].total).slice(0, 15);
+            
+            const breakdownDatasets = allTypesSorted.map(type => ({
+                label: type, 
+                data: topBreakdown.map(t => t[1][type] || 0), 
+                backgroundColor: getColorForType(type),
+                borderRadius: {topLeft: 2, topRight: 2}
+            })).filter(ds => ds.data.some(val => val > 0));
+
+            const ctx4 = document.getElementById('tutorGroupsChart').getContext('2d');
+            charts.push(new Chart(ctx4, {
+                type: 'bar',
+                data: { labels: topBreakdown.map(t => t[0]), datasets: breakdownDatasets },
+                options: {
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: {family: "'Outfit', 'Segoe UI', system-ui, sans-serif"} } }, tooltip: { mode: 'index', intersect: false } },
+                    scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, grid: { borderDash: [4, 4] } } }
+                }
+            }));
+
+            updateChartColors(); 
+        }
+
+        function renderTable(dataArray) {
+            const tbody = document.getElementById('detailsTableBody');
+            const noResults = document.getElementById('noResults');
+            
+            if (dataArray.length === 0) {
+                tbody.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            tbody.innerHTML = dataArray.map(row => {
+                const typeColor = getColorForType(row.rawType);
+                
+                // Constructing the heavily tinted, detailed row
+                return `
+                    <tr class="colored-row transition-colors group cursor-default" style="--row-bg: ${typeColor}15; --row-bg-hover: ${typeColor}25; --row-border: ${typeColor}; --row-border-light: ${typeColor}30;">
+                        <td class="px-5 py-4 whitespace-nowrap text-xs text-gray-700 dark:text-gray-300 font-medium">${escapeHTML(row.dateDisplay)}</td>
+                        <td class="px-5 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">${escapeHTML(row.student)}</td>
+                        <td class="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-200">${escapeHTML(row.yearDisplay)}</td>
+                        <td class="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-200">${escapeHTML(row.tutor)}</td>
+                        <td class="px-5 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1.5 text-xs font-bold rounded-md shadow-sm border" style="background-color: ${typeColor}20; color: ${typeColor}; border-color: ${typeColor}50;">${escapeHTML(row.rawType)}</span>
+                        </td>
+                        <td class="px-5 py-4 whitespace-nowrap max-w-[200px] truncate text-sm font-medium text-gray-800 dark:text-gray-200" title="${escapeHTML(row.description)}">${escapeHTML(row.description)}</td>
+                        <td class="px-5 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400">
+                                    ${escapeHTML(row.loggedBy.charAt(0))}
+                                </div>
+                                ${escapeHTML(row.loggedBy)}
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 min-w-[250px] whitespace-normal text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+                            ${row.comment ? escapeHTML(row.comment) : '<span class="italic opacity-50">No additional comment provided.</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function executeTableSearch() {
+            if (!currentSearchTerm) {
+                renderTable(currentFilteredData);
+                return;
+            }
+            
+            const term = currentSearchTerm.toLowerCase();
+            const searchedData = currentFilteredData.filter(row => {
+                return row.student.toLowerCase().includes(term) ||
+                       row.tutor.toLowerCase().includes(term) ||
+                       row.loggedBy.toLowerCase().includes(term) ||
+                       row.description.toLowerCase().includes(term) ||
+                       row.comment.toLowerCase().includes(term) ||
+                       row.rawType.toLowerCase().includes(term);
+            });
+            renderTable(searchedData);
+        }
+
+        document.getElementById('tableSearch').addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value.trim();
+            executeTableSearch();
+        });
+
+        let attendanceChart = null;
+
+        function renderAttendanceData() {
+            // Filter all data for "Late" or "Absence" (based on description or type)
+            const attData = currentFilteredData.filter(row => {
+                const desc = row.description.toLowerCase();
+                const type = row.rawType.toLowerCase();
+                return desc.includes('late') || desc.includes('absence') || type.includes('late') || type.includes('absence');
+            });
+            
+            const tbody = document.getElementById('attendanceTableBody');
+            const noResults = document.getElementById('noAttendanceResults');
+            
+            if (attData.length === 0) {
+                tbody.innerHTML = '';
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                tbody.innerHTML = attData.map(row => {
+                    const typeColor = getColorForType(row.rawType);
+                    return `
+                        <tr class="colored-row transition-colors group cursor-default" style="--row-bg: ${typeColor}15; --row-bg-hover: ${typeColor}25; --row-border: ${typeColor}; --row-border-light: ${typeColor}30;">
+                            <td class="px-5 py-4 whitespace-nowrap text-xs text-gray-700 dark:text-gray-300 font-medium">${escapeHTML(row.dateDisplay)}</td>
+                            <td class="px-5 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">${escapeHTML(row.student)}</td>
+                            <td class="px-5 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-200">${escapeHTML(row.tutor)}</td>
+                            <td class="px-5 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1.5 text-xs font-bold rounded-md shadow-sm border" style="background-color: ${typeColor}20; color: ${typeColor}; border-color: ${typeColor}50;">${escapeHTML(row.description)}</span>
+                            </td>
+                            <td class="px-5 py-4 min-w-[250px] whitespace-normal text-xs font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
+                                ${row.comment ? escapeHTML(row.comment) : '<span class="italic opacity-50">No additional comment provided.</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            
+            // Build Chart Data
+            const dailyLates = {};
+            attData.forEach(row => {
+                if (!dailyLates[row.dateSortKey]) dailyLates[row.dateSortKey] = 0;
+                dailyLates[row.dateSortKey]++;
+            });
+            
+            const sortedDates = Object.keys(dailyLates).sort();
+            const dateLabels = sortedDates.map(d => {
+                const date = new Date(d);
+                return isNaN(date) ? d : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            });
+            const dataCounts = sortedDates.map(d => dailyLates[d]);
+            
+            if (attendanceChart) attendanceChart.destroy();
+            
+            const ctx = document.getElementById('latenessChart').getContext('2d');
+            const isDark = html.classList.contains('dark');
+            const gridColor = isDark ? '#33493b' : '#dcebe1';
+            
+            attendanceChart = new Chart(ctx, {
+                type: 'line',
+                data: { 
+                    labels: dateLabels, 
+                    datasets: [{
+                        label: 'Lateness Records',
+                        data: dataCounts,
+                        borderColor: '#f43f5e', // Rose color for lates
+                        backgroundColor: '#f43f5e33',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#f43f5e'
+                    }] 
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        x: { grid: { display: false } }, 
+                        y: { beginAtZero: true, grid: { borderDash: [4, 4], color: gridColor }, ticks: { stepSize: 1 } } 
+                    }
+                }
+            });
+        }
+
+        // Initialize application when DOM is ready
+        window.addEventListener('DOMContentLoaded', initDataLoad);
+
+    </script>
+</body>
+</html>
